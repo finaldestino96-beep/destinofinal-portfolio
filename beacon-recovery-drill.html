@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A local-first Beacon tutorial for signed heartbeats, checkpoint verification and Mayday recovery drills." />
+  <title>A Local-First Beacon Recovery Drill — DestinoFinal</title>
+  <link rel="alternate" type="application/rss+xml" title="DestinoFinal tutorials" href="feed.xml" />
+  <style>
+    :root{color-scheme:dark;--bg:#090b10;--panel:#111621;--text:#eef2ff;--muted:#aab4c8;--accent:#62e6b8;--line:#263044}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:17px/1.72 system-ui,sans-serif}main{max-width:850px;margin:auto;padding:48px 22px 90px}a{color:var(--accent)}.back{display:inline-block;margin-bottom:36px}h1{font-size:clamp(2.3rem,8vw,4.8rem);line-height:1.02;letter-spacing:-.045em;margin:.2em 0}h2{margin-top:2.2em;line-height:1.2}.lede{font-size:1.25rem;color:var(--muted)}.meta,.note{color:var(--muted)}.diagram{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:28px 0}.diagram span{padding:16px 10px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:12px}pre{overflow:auto;padding:18px;background:#05070b;border:1px solid var(--line);border-radius:12px;font-size:.9rem;line-height:1.5}.note{border-left:3px solid var(--accent);padding:10px 16px;background:var(--panel)}code{color:#b7f7df}@media(max-width:650px){.diagram{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body><main>
+  <a class="back" href="index.html">← DestinoFinal portfolio</a>
+  <p class="meta">Technical tutorial · July 11, 2026 · Beacon 2.x</p>
+  <h1>A Local-First Recovery Drill for Beacon Agents</h1>
+  <p class="lede">How to create a signed proof of life, verify a checkpoint, and prepare a Mayday continuity bundle without contacting a public relay or exposing a wallet.</p>
+
+  <p>Beacon is an open coordination protocol for AI agents. It provides durable Ed25519 identities, signed envelopes, proof-of-life heartbeats, peer discovery, multiple transports, and recovery signals. Those pieces matter because an agent is not only a prompt or a process. A useful agent has state, ongoing goals, operational boundaries, and peers that need to distinguish a healthy worker from an unavailable one. The official project is the <a href="https://github.com/Scottcjn/beacon-skill">beacon-skill repository</a>.</p>
+
+  <p>The bounty that prompted this tutorial names Beacon 2.6. Beacon has continued to evolve; this drill was run against <code>beacon-skill 2.16.1</code>. Instead of repeating a basic public-Atlas registration guide, this article takes a narrower operations angle: test recovery locally first. It generates disposable state in a temporary directory, so a developer can learn the mechanics without modifying a real Beacon identity, posting to a social transport, or sending RTC.</p>
+
+  <div class="diagram" aria-label="Recovery drill flow"><span>Identity</span><span>Heartbeat</span><span>Signed checkpoint</span><span>Mayday bundle</span></div>
+
+  <h2>Why a recovery drill matters</h2>
+  <p>A heartbeat answers a small but important question: “Did this identity report that it was alive?” It does not prove that every downstream service is correct. A signed checkpoint adds context that a supervisor can verify before accepting a handoff. Finally, a Mayday bundle organizes continuity information such as goals, values, and a journal digest. These layers should not be confused with authorization. A recovery bundle is not permission to spend funds, reveal credentials, or impersonate the original agent.</p>
+
+  <p>This separation is useful in multi-agent systems. A queue may deliver jobs and MCP may expose tools, but neither automatically supplies a persistent cryptographic identity or an emergency handoff format. Beacon complements those systems. The queue says what work is waiting; a Beacon heartbeat says who is present; a signed envelope proves which key produced a message; and Mayday gives a structured starting point when the underlying machine or process must be replaced.</p>
+
+  <h2>Install in an isolated environment</h2>
+  <pre><code>python3 -m venv .venv
+. .venv/bin/activate
+pip install "beacon-skill==2.16.1"
+python beacon_recovery_drill.py</code></pre>
+  <p>Download the complete runnable example: <a href="beacon_recovery_drill.py">beacon_recovery_drill.py</a>. It uses only public APIs from the installed package and Python’s standard library. Every important operation has an assertion, so a broken assumption produces a failure instead of a misleading success message.</p>
+
+  <h2>Step 1: create disposable state and a heartbeat</h2>
+  <pre><code>state_dir = Path(tempfile.mkdtemp(prefix="destino_beacon_drill_"))
+worker = AgentIdentity.generate()
+heartbeats = HeartbeatManager(data_dir=state_dir)
+result = heartbeats.beat(
+    worker,
+    status="alive",
+    health={"queue_depth": 0, "recovery_ready": True},
+)
+heartbeat = result["heartbeat"]</code></pre>
+  <p><code>AgentIdentity.generate()</code> creates a fresh Ed25519 identity for the test. The temporary state directory prevents the drill from overwriting <code>~/.beacon</code>. The heartbeat includes an agent identifier, status, counter, timestamp, and optional health fields. In production, health should describe signals a supervisor can act on—queue depth, dependency availability, or recovery readiness—rather than decorative metrics.</p>
+
+  <h2>Step 2: sign and verify a checkpoint</h2>
+  <pre><code>checkpoint = {
+    "kind": "checkpoint",
+    "text": "Recovery drill checkpoint is ready",
+    "heartbeat_count": heartbeat["beat_count"],
+}
+encoded = encode_envelope(
+    checkpoint, version=2, identity=worker, include_pubkey=True
+)
+decoded = decode_envelopes(encoded)[0]
+assert verify_envelope(decoded)</code></pre>
+  <p>The checkpoint travels inside a Beacon v2 envelope. Including the public key lets the receiver verify that the content and signature agree. Verification establishes message integrity and possession of the signing key; it does not establish that every statement inside the checkpoint is true. A robust supervisor still checks freshness, expected identity, nonce policy, and whether the requested action is allowed.</p>
+
+  <h2>Step 3: construct a controlled Mayday bundle</h2>
+  <p>The example creates a continuity goal, a verification principle, a hard boundary against putting secrets in recovery data, and a journal entry. <code>MaydayManager.build_bundle()</code> then packages the relevant state. The script checks that the resulting bundle belongs to the same agent and contains non-empty continuity data.</p>
+
+  <p class="note"><strong>Security boundary:</strong> never paste a seed phrase, private key, exchange password, API token, or wallet recovery secret into a goal, journal, heartbeat, public issue, or Mayday payload. Public addresses are designed to be shared; signing and recovery secrets are not.</p>
+
+  <h2>Expected result and failure handling</h2>
+  <pre><code>PASS: heartbeat belongs to worker
+PASS: worker reports alive
+PASS: checkpoint signature verifies
+PASS: Mayday bundle keeps agent identity
+PASS: Mayday bundle contains continuity data
+agent_id=bcn_...
+DRILL COMPLETE: no public relay or wallet was contacted</code></pre>
+  <p>Exact identifiers and temporary paths change on every run. If signature verification fails, stop the handoff. If the heartbeat belongs to an unexpected agent, reject it. If the bundle lacks the expected identity, do not merge its state. These are deliberately strict outcomes: recovery automation is precisely where a system should fail closed.</p>
+
+  <h2>Moving from the drill to a real deployment</h2>
+  <p>After this local test passes, create a password-protected persistent identity, define a backup process, and choose a transport appropriate for the network. Beacon supports local UDP, webhooks, social transports, RustChain integration, and Atlas discovery. Add public registration only after deciding which capabilities and endpoints should be discoverable. Run heartbeats under a service manager, monitor for silent peers, and practice recovery using non-production data before trusting the procedure.</p>
+
+  <p>The central lesson is simple: presence, integrity, and continuity are separate controls. A heartbeat reports presence. A signed checkpoint provides integrity. A Mayday bundle supports continuity. Used together—and kept separate from financial authorization—they give agent operators a practical foundation for safer handoffs.</p>
+
+  <p class="meta">AI-assisted drafting and code review were used. The example was executed locally against the stated package version, and this article does not claim prior client work.</p>
+</main></body></html>
