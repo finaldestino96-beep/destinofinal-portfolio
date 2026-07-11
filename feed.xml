@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"><channel>
+  <title>DestinoFinal Technical Tutorials</title>
+  <link>https://finaldestino96-beep.github.io/destinofinal-portfolio/</link>
+  <description>Tested notes on frontend, backend and agent systems.</description>
+  <language>en-us</language>
+  <item>
+    <title>A Local-First Recovery Drill for Beacon Agents</title>
+    <link>https://finaldestino96-beep.github.io/destinofinal-portfolio/beacon-recovery-drill.html</link>
+    <guid>https://finaldestino96-beep.github.io/destinofinal-portfolio/beacon-recovery-drill.html</guid>
+    <pubDate>Sat, 11 Jul 2026 18:30:00 -0500</pubDate>
+    <description>Signed heartbeats, checkpoint verification and Mayday continuity without contacting a public relay.</description>
+  </item>
+</channel></rss>
