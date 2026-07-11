@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DestinoFinal — frontend, backend and Web3 development portfolio." />
+  <title>DestinoFinal — Web3 Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="DestinoFinal home"><span>DF</span> DestinoFinal</a>
+    <nav aria-label="Primary navigation">
+      <a href="#work">Work</a><a href="#capabilities">Capabilities</a><a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="eyebrow"><span></span> Available for focused technical evaluations</div>
+      <h1>Building clear interfaces for <em>complex systems.</em></h1>
+      <p class="lede">Frontend, backend and Web3 prototypes with a focus on responsive UX, tested integrations and honest documentation.</p>
+      <div class="actions">
+        <a class="button primary" href="#work">Explore prototypes</a>
+        <a class="button secondary" href="https://github.com/finaldestino96-beep">GitHub profile ↗</a>
+      </div>
+      <div class="stack" aria-label="Technology stack"><span>TypeScript</span><span>React / Next.js</span><span>Node.js</span><span>Solana</span><span>Rust</span></div>
+    </section>
+
+    <section class="metrics" aria-label="Working principles">
+      <article><strong>Mobile-first</strong><small>Responsive by default</small></article>
+      <article><strong>Security-aware</strong><small>No keys in client code</small></article>
+      <article><strong>Testable</strong><small>Clear states and boundaries</small></article>
+    </section>
+
+    <section id="work" class="section">
+      <div class="section-heading"><div><span>Selected work</span><h2>Interactive prototypes</h2></div><p>Purpose-built demonstrations. They are clearly labeled as prototypes, not prior client work.</p></div>
+
+      <article class="project featured">
+        <div class="project-copy">
+          <span class="tag">Audio UX prototype</span>
+          <h3>Story Capture</h3>
+          <p>A browser-native recording experience demonstrating permission handling, recording state, playback and a mobile-ready publishing flow.</p>
+          <ul><li>MediaRecorder API</li><li>Accessible state feedback</li><li>No audio leaves the device</li></ul>
+        </div>
+        <div class="recorder-card">
+          <div class="recorder-head"><span>New story</span><small id="status">Ready to record</small></div>
+          <div class="wave" id="wave" aria-hidden="true"></div>
+          <div class="timer" id="timer">00:00</div>
+          <button id="recordButton" class="record" type="button"><span></span><b>Start recording</b></button>
+          <audio id="playback" controls hidden></audio>
+          <p class="privacy">Audio stays local in this prototype.</p>
+        </div>
+      </article>
+
+      <div class="project-grid">
+        <article class="project small">
+          <div class="icon">◎</div><span class="tag">Wallet UX</span><h3>Connection State Lab</h3>
+          <p>A safe UI demonstration for disconnected, connecting and connected wallet states—without requesting a signature.</p>
+          <button id="walletDemo" class="text-button" type="button">Run state demo →</button><output id="walletState">Disconnected</output>
+        </article>
+        <article class="project small">
+          <div class="icon">⌁</div><span class="tag">Backend design</span><h3>Async Job Blueprint</h3>
+          <p>A documented architecture for uploads, background audio processing, retries and observable job status.</p>
+          <div class="flow"><span>Upload</span><i>→</i><span>Queue</span><i>→</i><span>Process</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="capabilities" class="section capabilities">
+      <div class="section-heading"><div><span>Capabilities</span><h2>What I can contribute</h2></div></div>
+      <div class="cap-grid">
+        <article><b>01</b><h3>Frontend</h3><p>Responsive interfaces, design translation, accessibility and resilient client states.</p></article>
+        <article><b>02</b><h3>Backend</h3><p>API contracts, asynchronous workflows, tests, error handling and technical documentation.</p></article>
+        <article><b>03</b><h3>Web3</h3><p>Wallet experience, transaction preparation and explicit network/address validation.</p></article>
+        <article><b>04</b><h3>AI-assisted delivery</h3><p>Rapid prototypes, code review, test generation and documentation with manual validation.</p></article>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <span>Let’s build carefully.</span><h2>Open to a focused technical evaluation.</h2>
+      <p>For project discussions, contact me through the profiles below. I never request private keys or seed phrases.</p>
+      <div class="actions"><a class="button primary" href="https://t.me/Fatulini">Telegram ↗</a><a class="button secondary" href="https://github.com/finaldestino96-beep">GitHub ↗</a></div>
+    </section>
+  </main>
+
+  <footer><span>DestinoFinal © 2026</span><span>Built as a transparent portfolio prototype.</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
