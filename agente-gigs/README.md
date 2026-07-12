@@ -4,6 +4,8 @@ Agente local para descubrir y ordenar oportunidades públicas de recompensas.
 
 También puede completar automáticamente tipos de trabajo expresamente admitidos,
 si el propietario aprobó el trabajo y registró evidencia de escrow verificado.
+Incluye además un servicio protegido que usa Claude para preparar propuestas
+veraces sin enviarlas automáticamente.
 
 ## Qué hace
 
@@ -15,6 +17,7 @@ si el propietario aprobó el trabajo y registró evidencia de escrow verificado.
 - Mantiene bloqueadas las reclamaciones, entregas y operaciones financieras hasta aprobación humana.
 - Ejecuta trabajos JSON→CSV dentro de un espacio de trabajo aislado.
 - Produce un manifiesto de evidencia, hashes SHA-256 y una nota de entrega.
+- Genera borradores de propuestas con Claude mediante `POST /proposal`.
 
 ## Qué no hace
 
@@ -23,6 +26,7 @@ si el propietario aprobó el trabajo y registró evidencia de escrow verificado.
 - No almacena frases semilla ni claves privadas.
 - No garantiza que una recompensa sea válida o que vaya a pagarse.
 - No ejecuta comandos arbitrarios ni código descargado de clientes.
+- No expone la clave de Anthropic ni envía propuestas a plataformas.
 
 ## Inicio rápido
 
@@ -69,6 +73,49 @@ contiene un manifiesto JSON y una nota Markdown lista para acompañar la entrega
 ```bash
 python -m unittest -v
 ```
+
+## Servicio de propuestas con Claude
+
+El servicio usa directamente la API Messages de Anthropic y no requiere un
+framework web. Necesita dos secretos configurados como variables de entorno:
+
+- `ANTHROPIC_API_KEY`: clave creada en tu cuenta de Anthropic.
+- `APP_API_KEY`: contraseña larga para impedir que terceros consuman tu saldo.
+
+Nunca subas esos valores al repositorio. `.env.example` contiene solamente los
+nombres y valores de ejemplo.
+
+Inicio local:
+
+```bash
+export ANTHROPIC_API_KEY="tu-clave"
+export APP_API_KEY="una-contraseña-larga"
+python service.py
+```
+
+Solicitud:
+
+```bash
+curl -X POST http://localhost:8000/proposal \
+  -H "Authorization: Bearer $APP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Convert JSON to CSV","description":"Convert records and preserve fields","platform":"Marketplace","budget":"$50","skills":["Python"],"language":"Spanish"}'
+```
+
+La respuesta contiene un borrador y `submitted: false`. Debes revisar que cada
+afirmación sea cierta antes de enviarlo.
+
+### Railway
+
+Conecta este repositorio y configura el directorio raíz como `/agente-gigs`.
+`railway.json` ejecuta las pruebas, inicia `service.py` y comprueba `/health`.
+Añade `ANTHROPIC_API_KEY` y `APP_API_KEY` en Variables; no las pongas en GitHub.
+
+### Render
+
+El archivo `/render.yaml` define el servicio, su directorio raíz y el endpoint
+de salud. Al crear el Blueprint, Render solicitará `ANTHROPIC_API_KEY` y generará
+`APP_API_KEY` sin guardarlas en el repositorio.
 
 ## Pagos multimoneda
 
