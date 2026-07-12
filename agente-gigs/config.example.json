@@ -1,0 +1,40 @@
+{
+  "identity": {
+    "agent_name": "Destino Bounty Agent",
+    "owner_name": "CONFIGURE_LOCALLY",
+    "contact_email": "CONFIGURE_LOCALLY",
+    "wallets": {
+      "solana": "CONFIGURE_LOCALLY",
+      "ethereum_evm": "CONFIGURE_LOCALLY",
+      "bitcoin": "CONFIGURE_LOCALLY"
+    },
+    "github_connected": false,
+    "github_username": "CONFIGURE_LOCALLY"
+  },
+  "rules": {
+    "minimum_reward_usd": 5,
+    "require_human_approval_before_claim": true,
+    "require_human_approval_before_submission": true,
+    "allow_private_keys": false,
+    "allow_seed_phrases": false,
+    "accept_any_cryptocurrency": true,
+    "require_supported_network": true,
+    "require_asset_network_address_check": true
+  },
+  "sources": [
+    {"name": "Algora", "url": "https://algora.io/bounties"},
+    {"name": "Opire", "url": "https://opire.dev/home"},
+    {"name": "Immunefi", "url": "https://immunefi.com/bug-bounty/"}
+  ],
+  "demo_opportunities": [
+    {
+      "title": "Example coding bounty",
+      "url": "https://example.com/bounty",
+      "platform": "demo",
+      "reward_usd": 50,
+      "currency": "USDC",
+      "difficulty": 2,
+      "kyc": "unknown"
+    }
+  ]
+}
