@@ -13,6 +13,7 @@
   },
   "rules": {
     "minimum_reward_usd": 5,
+    "require_verified_escrow_before_execution": true,
     "require_human_approval_before_claim": true,
     "require_human_approval_before_submission": true,
     "allow_private_keys": false,
