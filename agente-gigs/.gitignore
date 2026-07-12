@@ -2,3 +2,4 @@ config.json
 opportunities.json
 __pycache__/
 *.py[cod]
+.env
