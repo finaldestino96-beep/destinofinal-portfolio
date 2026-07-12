@@ -1,0 +1,14 @@
+{
+  "job_id": "json-csv-001",
+  "task_type": "json_to_csv",
+  "reward_usd": 50,
+  "approved_by_owner": false,
+  "payment": {
+    "escrow_verified": false,
+    "reference": "",
+    "verified_by": ""
+  },
+  "input_path": "input/data.json",
+  "output_path": "deliverables/data.csv",
+  "evidence_dir": "evidence"
+}
