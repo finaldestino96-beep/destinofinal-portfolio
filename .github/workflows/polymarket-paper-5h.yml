@@ -1,0 +1,62 @@
+name: Polymarket Paper Test 5h
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/polymarket-paper-5h.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  paper-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    concurrency:
+      group: polymarket-paper-5h
+      cancel-in-progress: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate paper-only source
+        run: |
+          python -m py_compile experiments/polymarket-paper/paper_bot.py
+          ! grep -q 'SIGNER_PRIVATE_KEY' experiments/polymarket-paper/paper_bot.py
+          ! grep -q 'POST /order' experiments/polymarket-paper/paper_bot.py
+
+      - name: Run five-hour live-data paper test
+        run: |
+          python experiments/polymarket-paper/paper_bot.py \
+            --duration 18000 \
+            --interval 2 \
+            --output polymarket-results-5h
+
+      - name: Package reports
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, zipfile
+          out = pathlib.Path('polymarket-results-5h')
+          out.mkdir(exist_ok=True)
+          required = ['paper_result.json','trades.csv','market_log.csv','reasoning_log.jsonl','shadow_strategy_results.json','checkpoint.json']
+          validation = {name: (out/name).exists() for name in required}
+          (out/'validation.json').write_text(json.dumps(validation, indent=2))
+          with zipfile.ZipFile('polymarket-paper-results-5h.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in out.iterdir():
+                  if p.is_file(): z.write(p,p.name)
+          PY
+
+      - name: Upload final reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymarket-paper-results-5h
+          path: polymarket-paper-results-5h.zip
+          retention-days: 7
+          if-no-files-found: error
