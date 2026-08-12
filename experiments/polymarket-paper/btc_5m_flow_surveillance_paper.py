@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Five consecutive BTC 5m paper decisions with spot/order-flow surveillance."""
+"""Ten consecutive BTC 5m paper decisions with public spot/order-flow surveillance."""
 import json, subprocess, time
 from pathlib import Path
 
 NOW=int(time.time())
 START=NOW-NOW%300+300
-WINDOWS=[START+300*i for i in range(5)]
-OUT=Path("btc_5m_flow_runs33_37"); OUT.mkdir(exist_ok=True)
+WINDOWS=[START+300*i for i in range(10)]
+OUT=Path("btc_5m_flow_runs38_47"); OUT.mkdir(exist_ok=True)
 
 def fetch(url):
  r=subprocess.run(["curl","-fsSL","--max-time","15",url],capture_output=True,text=True,check=True)
@@ -24,19 +24,33 @@ def book(token):
  asks=[(float(v['price']),float(v['size'])) for v in x.get('asks',[])]
  return {"bid":max((p for p,_ in bids),default=None),"ask":min((p for p,_ in asks),default=None),
          "bid_size":sum(s for _,s in bids),"ask_size":sum(s for _,s in asks)}
-def spot_snapshot(epoch):
- depth=fetch("https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=100")
- bids=[(float(p),float(q)) for p,q in depth['bids']];asks=[(float(p),float(q)) for p,q in depth['asks']]
+def coinbase_snapshot(epoch):
+ depth=fetch("https://api.exchange.coinbase.com/products/BTC-USD/book?level=2")
+ bids=[(float(v[0]),float(v[1])) for v in depth['bids']];asks=[(float(v[0]),float(v[1])) for v in depth['asks']]
  bn=sum(p*q for p,q in bids);an=sum(p*q for p,q in asks); imbalance=(bn-an)/(bn+an) if bn+an else 0
- trades=fetch("https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=500")
- buy=sum(float(t['qty'])*float(t['price']) for t in trades if not t['isBuyerMaker'])
- sell=sum(float(t['qty'])*float(t['price']) for t in trades if t['isBuyerMaker'])
+ trades=fetch("https://api.exchange.coinbase.com/products/BTC-USD/trades?limit=500")
+ buy=sum(float(t['size'])*float(t['price']) for t in trades if t['side']=='sell')
+ sell=sum(float(t['size'])*float(t['price']) for t in trades if t['side']=='buy')
  flow=(buy-sell)/(buy+sell) if buy+sell else 0
- kl=fetch(f"https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime={epoch*1000}&limit=2")
- ref=float(kl[0][1]);current=float(kl[-1][4]);delta=current-ref
+ candles=sorted(fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60"),key=lambda v:v[0])
+ eligible=[v for v in candles if int(v[0])>=epoch];ref=float((eligible or candles)[0][3]);current=float(candles[-1][4]);delta=current-ref
  top_bid=max(q for _,q in bids);top_ask=max(q for _,q in asks); large_ratio=(top_bid+1e-9)/(top_ask+1e-9)
- return {"reference":ref,"current":current,"delta":delta,"depth_imbalance":imbalance,"aggressor_flow":flow,
+ return {"source":"coinbase","reference":ref,"current":current,"delta":delta,"depth_imbalance":imbalance,"aggressor_flow":flow,
          "buy_notional":buy,"sell_notional":sell,"largest_bid_btc":top_bid,"largest_ask_btc":top_ask,"large_order_ratio":large_ratio}
+def kraken_snapshot(epoch):
+ depth=fetch("https://api.kraken.com/0/public/Depth?pair=XBTUSD&count=100")['result']; pair=next(iter(depth.values()))
+ bids=[(float(v[0]),float(v[1])) for v in pair['bids']];asks=[(float(v[0]),float(v[1])) for v in pair['asks']]
+ bn=sum(p*q for p,q in bids);an=sum(p*q for p,q in asks);imbalance=(bn-an)/(bn+an) if bn+an else 0
+ tr=fetch("https://api.kraken.com/0/public/Trades?pair=XBTUSD")['result'];rows=next(v for k,v in tr.items() if k!='last')
+ buy=sum(float(v[0])*float(v[1]) for v in rows if v[3]=='b');sell=sum(float(v[0])*float(v[1]) for v in rows if v[3]=='s');flow=(buy-sell)/(buy+sell) if buy+sell else 0
+ oh=fetch(f"https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1&since={epoch}")['result'];rows=next(v for k,v in oh.items() if k!='last')
+ ref=float(rows[0][1]);current=float(rows[-1][4]);delta=current-ref
+ top_bid=max(q for _,q in bids);top_ask=max(q for _,q in asks);large_ratio=(top_bid+1e-9)/(top_ask+1e-9)
+ return {"source":"kraken","reference":ref,"current":current,"delta":delta,"depth_imbalance":imbalance,"aggressor_flow":flow,
+         "buy_notional":buy,"sell_notional":sell,"largest_bid_btc":top_bid,"largest_ask_btc":top_ask,"large_order_ratio":large_ratio}
+def spot_snapshot(epoch):
+ try:return coinbase_snapshot(epoch)
+ except Exception:return kraken_snapshot(epoch)
 def save(state):
  tmp=OUT/"checkpoint.json.tmp"
  tmp.write_text(json.dumps(state,indent=2))
@@ -57,7 +71,7 @@ def resolve(slug):
  return None,[]
 
 state={"mode":"PAPER_ONLY","initial_capital":100.,"capital":100.,"orders":[],"errors":[],"real_orders":0}
-for run,epoch in enumerate(WINDOWS,33):
+for run,epoch in enumerate(WINDOWS,38):
  while time.time()<epoch+30:time.sleep(min(5,max(.2,epoch+30-time.time())))
  slug=f"btc-updown-5m-{epoch}"
  try:
@@ -80,7 +94,7 @@ for run,epoch in enumerate(WINDOWS,33):
          "polymarket_up":probs[0],"polymarket_down":probs[1],"spot":snap,"polymarket_book":pmbook,"locked_at":time.time()}
   state['orders'].append(order);state['capital']-=stake;save(state)
  except Exception as e:
-  state['errors'].append({"run":run,"stage":"entry","error":type(e).__name__});save(state);continue
+  state['errors'].append({"run":run,"stage":"entry","error":type(e).__name__,"detail":str(e)[:500]});save(state);continue
  # Low-frequency surveillance, persisted. Entry stays locked.
  order['surveillance']=[]
  while time.time()<epoch+305:
