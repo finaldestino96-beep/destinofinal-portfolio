@@ -1,0 +1,39 @@
+name: BTC 5m Flow Paper Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/btc-5m-flow-paper.yml'
+permissions:
+  contents: read
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PAPER_ONLY
+        run: |
+          python -m py_compile experiments/polymarket-paper/btc_5m_flow_surveillance_paper.py
+          ! grep -q 'PRIVATE_KEY' experiments/polymarket-paper/btc_5m_flow_surveillance_paper.py
+          ! grep -q 'POST /order' experiments/polymarket-paper/btc_5m_flow_surveillance_paper.py
+      - name: Run five BTC windows
+        run: python experiments/polymarket-paper/btc_5m_flow_surveillance_paper.py
+      - name: Package
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,zipfile
+          p=pathlib.Path('btc_5m_flow_runs33_37')
+          with zipfile.ZipFile('btc-5m-flow-results.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for f in p.glob('*'):
+                  if f.is_file(): z.write(f,f.name)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btc-5m-flow-results
+          path: btc-5m-flow-results.zip
+          retention-days: 7
+          if-no-files-found: error
