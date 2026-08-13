@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Ten consecutive BTC 5m paper decisions with public spot/order-flow surveillance."""
+"""Fifty consecutive BTC 5m adaptive PAPER_ONLY decisions using public live data."""
 import json, subprocess, time
 from pathlib import Path
 
 NOW=int(time.time())
 START=NOW-NOW%300+300
-WINDOWS=[START+300*i for i in range(10)]
-OUT=Path("btc_5m_flow_runs38_47"); OUT.mkdir(exist_ok=True)
+WINDOWS=[START+300*i for i in range(50)]
+OUT=Path("btc_5m_training_runs48_97"); OUT.mkdir(exist_ok=True)
 
 def fetch(url):
  r=subprocess.run(["curl","-fsSL","--max-time","15",url],capture_output=True,text=True,check=True)
@@ -70,9 +70,28 @@ def resolve(slug):
   time.sleep(10)
  return None,[]
 
-state={"mode":"PAPER_ONLY","initial_capital":100.,"capital":100.,"orders":[],"errors":[],"real_orders":0}
-for run,epoch in enumerate(WINDOWS,38):
+def settle_and_train(o,state):
+ if o.get('trained'):return
+ winner,prices=resolve(o['slug']);o['winner']=winner;o['final_outcome_prices']=prices
+ if not winner:return
+ target=1 if winner=="UP" else -1
+ before=list(state['signal_weights'])
+ for i,sig in enumerate(o['signals']):
+  if sig:state['signal_weights'][i]=round(min(2.,max(.25,state['signal_weights'][i]+(.08 if sig==target else -.08))),4)
+ o['trained']=True
+ state['training_history'].append({'run':o['run'],'winner':winner,'weights_before':before,'weights_after':list(state['signal_weights'])})
+ if o['selection']=="NO_TRADE":o.update(result="no_trade",gross_pnl=0);return
+ payout=o['shares'] if winner==o['selection'] else 0.;state['capital']+=payout
+ o['result']="won" if payout else "lost";o['gross_pnl']=payout-o['stake']
+
+state={"mode":"PAPER_ONLY","initial_capital":100.,"capital":100.,"orders":[],"errors":[],"real_orders":0,
+       "signal_names":["btc_delta","depth_imbalance","aggressor_flow","polymarket_probability"],
+       "signal_weights":[1.,1.,1.,1.],"training_history":[]}
+for run,epoch in enumerate(WINDOWS,48):
  while time.time()<epoch+30:time.sleep(min(5,max(.2,epoch+30-time.time())))
+ for prior in state['orders']:
+  if not prior.get('trained') and time.time()>=prior['epoch']+315:
+   settle_and_train(prior,state);save(state)
  slug=f"btc-updown-5m-{epoch}"
  try:
   m=market(epoch); tokens=json.loads(m['clobTokenIds']); probs=[float(v) for v in json.loads(m['outcomePrices'])]
@@ -82,15 +101,19 @@ for run,epoch in enumerate(WINDOWS,38):
   signals.append(1 if snap['depth_imbalance']>.05 else -1 if snap['depth_imbalance']<-.05 else 0)
   signals.append(1 if snap['aggressor_flow']>.05 else -1 if snap['aggressor_flow']<-.05 else 0)
   signals.append(1 if probs[0]>.54 else -1 if probs[1]>.54 else 0)
-  score=sum(signals); side="UP" if score>0 else "DOWN" if score<0 else "NO_TRADE"
-  confidence=abs(score)
-  stake=15. if confidence>=4 else 10. if confidence==3 else 5. if confidence==2 else 0.
+  weighted_score=sum(s*w for s,w in zip(signals,state['signal_weights']));score=sum(signals)
+  side="UP" if weighted_score>0 else "DOWN" if weighted_score<0 else "NO_TRADE"
+  confidence=abs(weighted_score)
+  stake=5. if confidence>=3.4 else 3. if confidence>=2.5 else 2. if confidence>=1.9 else 0.
   if stake==0:side="NO_TRADE"
   token=tokens[0] if side=="UP" else tokens[1] if side=="DOWN" else None
   pmbook=book(token) if token else {}; entry=pmbook.get('ask')
-  if not entry or entry>=.95: side="NO_TRADE";stake=0.
+  # Avoid expensive entries and never risk more simulated cash than remains.
+  if not entry or entry>.62: side="NO_TRADE";stake=0.
+  stake=min(stake,max(0.,state['capital']))
   order={"run":run,"epoch":epoch,"slug":slug,"market":m['question'],"selection":side,"stake":stake,"entry_price":entry,
-         "shares":stake/entry if stake and entry else 0,"confidence_score":score,"signals":signals,
+         "shares":stake/entry if stake and entry else 0,"confidence_score":score,"weighted_score":weighted_score,
+         "weights_used":list(state['signal_weights']),"signals":signals,
          "polymarket_up":probs[0],"polymarket_down":probs[1],"spot":snap,"polymarket_book":pmbook,"locked_at":time.time()}
   state['orders'].append(order);state['capital']-=stake;save(state)
  except Exception as e:
@@ -102,14 +125,10 @@ for run,epoch in enumerate(WINDOWS,38):
   except Exception as e:state['errors'].append({"run":run,"stage":"monitor","error":type(e).__name__});save(state)
   time.sleep(30)
 
-# Resolve together to avoid delaying later entries.
+# Resolve remaining outcomes and finish adaptive training.
 for o in state['orders']:
- if o['selection']=="NO_TRADE":o.update(result="no_trade",gross_pnl=0);continue
- winner,prices=resolve(o['slug']);o['winner']=winner;o['final_outcome_prices']=prices
- if winner:
-  payout=o['shares'] if winner==o['selection'] else 0.;state['capital']+=payout
-  o['result']="won" if payout else "lost";o['gross_pnl']=payout-o['stake']
- else:
+ settle_and_train(o,state)
+ if not o.get('winner'):
   state['capital']+=o['stake'];o['result']="unresolved";o['gross_pnl']=0.
  save(state)
 state['gross_pnl']=state['capital']-state['initial_capital'];state['completed_at']=time.time();save(state)
