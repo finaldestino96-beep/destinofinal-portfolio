@@ -1,0 +1,36 @@
+name: BTC 5m backtest
+
+on:
+  push:
+    paths:
+      - ".github/workflows/polymarket-btc-backtest.yml"
+      - "backtest_polymarket.py"
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout runner repo
+        uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas pyarrow
+
+      - name: Download historical Polymarket data
+        run: |
+          git clone --depth 1 https://github.com/marketlenstrade/polymarket-historical-data.git polymarket-data
+
+      - name: Run sequential backtest
+        run: python backtest_polymarket.py
+
+      - name: Publish results
+        uses: actions/upload-artifact@v4
+        with:
+          name: btc-5m-backtest-results
+          path: |
+            backtest_summary.txt
+            backtest_results.csv
