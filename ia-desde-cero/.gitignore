@@ -1,0 +1,20 @@
+# Never commit model weights, private datasets, credentials, or runtime artifacts.
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.gguf
+.env
+.env.*
+secrets/
+private_data/
+raw_data/
+datasets/private/
+runs/
+checkpoints/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
