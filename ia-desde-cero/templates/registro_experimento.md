@@ -1,0 +1,34 @@
+# Registro de experimento
+
+- ID:
+- Fecha/hora:
+- Commit de código:
+- Versión de modelo:
+- Hash de checkpoint inicial:
+- Tokenizer/vocabulario:
+- Hash/manifiesto de datos:
+- Hardware:
+- Versiones de Python/PyTorch/CUDA:
+- Parámetros entrenables:
+- Tokens de entrenamiento:
+- Longitud de secuencia:
+- Batch efectivo:
+- Optimizer:
+- Learning rate y scheduler:
+- Warmup:
+- Weight decay:
+- Grad clipping:
+- Semilla:
+- Pasos/épocas:
+- Throughput (tokens/s):
+- Peak RAM/VRAM:
+- Train loss:
+- Validation loss:
+- Pruebas de diálogo:
+- Pruebas de regresión:
+- Fallos observados:
+- Cambio realizado:
+- Resultado:
+- Decisión: conservar / rechazar / repetir
+- Ruta de checkpoint:
+- Hash SHA-256:
