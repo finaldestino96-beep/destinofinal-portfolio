@@ -33,3 +33,10 @@ Colocar el proyecto real v15 en el repositorio o facilitar sus archivos: arquite
 - [ ] Auditar el código y checkpoint reales.
 - [ ] Medir tokens, parámetros, throughput, memoria y tiempo.
 - [ ] Ejecutar baseline reproducible y primera fase conversacional.
+
+## Alcance matemático y visual añadido
+- [Plan de matemáticas y diagramas](docs/06_matematicas_y_diagramas.md): aritmética, álgebra, geometría, trigonometría, cálculo diferencial e integral, probabilidad, estadística, álgebra lineal, matemática discreta y demostraciones.
+- La ruta distingue cálculo simbólico, cálculo numérico y uso de herramientas verificables. Los diagramas se representan como estructuras (por ejemplo Mermaid) y se evalúan por exactitud, no solo por apariencia.
+
+## Avances previos que se conservan
+Las notas históricas ya reportan construcción de la red propia, ciclos de entrenamiento hasta v15 y una batería de copia numérica con 16/16, además de mejoras de cálculo por columnas, acarreo/préstamo y multiplicación por etapas. Estos hitos no se plantean como tareas para volver a empezar; se conservan como baseline histórico y se repetirán únicamente para verificar que las nuevas fases no los dañen.
