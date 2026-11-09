@@ -49,3 +49,9 @@ Esto no equivale a comprensión humana ni a inteligencia general. Son criterios 
 
 ## 5. Decisiones pendientes de auditoría
 No fijar todavía learning rate, batch size, épocas, contexto, tamaño de vocabulario, cantidad de tokens o fecha de entrega. Esos valores dependen de arquitectura, hardware, precisión numérica, longitud de secuencia, throughput y curva de validación. Medir primero.
+
+## 6. Avances que ya se consideran realizados (historial)
+No reiniciar desde cero las tareas ya completadas. Las conversaciones anteriores informan: construcción de la red neuronal propia, entrenamiento iterativo hasta v15, mejoras de copia numérica hasta 16/16 en la batería reportada, y correcciones de suma/resta por columnas con acarreo/préstamo y multiplicación por etapas. Se conservan como baseline histórico. Para afirmar que siguen funcionando tras nuevas fases, se ejecuta la misma batería y se comparan resultados; la repetición es verificación de no-regresión, no rehacer el trabajo.
+
+## 7. Nueva brecha: matemáticas generales y representación visual
+El historial respalda trabajo en aritmética elemental, pero no demuestra todavía álgebra general, geometría, trigonometría, cálculo diferencial/integral, probabilidad, estadística, álgebra lineal, matemática discreta ni demostraciones. Tampoco hay benchmark confirmado de diagramas. Estas capacidades se desarrollarán en progresión y se evaluarán por separado.
