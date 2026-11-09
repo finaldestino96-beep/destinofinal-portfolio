@@ -67,3 +67,19 @@ Una versión candidata solo reemplaza a la estable si:
 - no empeora seguridad, copia ni cálculo;
 - es reproducible desde datos/configuración registrados.
 Si falla, conservar logs, rechazar y volver al checkpoint estable.
+
+## Fase 8 — Matemáticas completas y razonamiento verificable
+Seguir el currículo y los criterios de docs/06_matematicas_y_diagramas.md. No saltar directamente a derivadas si la IA todavía falla en álgebra y funciones. Separar conocimiento conceptual, resolución paso a paso, cálculo numérico y cálculo simbólico. Las respuestas numéricas críticas deben poder verificarse con pruebas independientes.
+
+## Ciclo de cierre obligatorio después de CADA fase
+1. Congelar el checkpoint candidato y calcular hash; conservar el checkpoint estable anterior.
+2. Registrar datos, licencia/origen, tokenizer, configuración, semilla, hardware, tokens procesados y duración.
+3. Medir train y validation; guardar curvas y muestras generadas.
+4. Ejecutar la batería completa de regresión: copia, aritmética, conversación multturno, instrucciones, temáticas y matemáticas ya aprobadas.
+5. Ejecutar pruebas nuevas no vistas para la capacidad de la fase.
+6. Revisar errores por categoría y determinar si hay sobreajuste, memorización, pérdida de contexto o regresión.
+7. Emitir informe: aprobado / repetir / corregir / revertir, con evidencia y umbrales.
+8. Promover el checkpoint solo si cumple los umbrales predefinidos; si no, volver al estable sin borrar el candidato ni sus logs.
+9. Actualizar la matriz de capacidades y la brecha restante.
+
+No pasar automáticamente a la siguiente fase por haber terminado una cantidad de épocas. El criterio es rendimiento medido y ausencia de regresiones.
