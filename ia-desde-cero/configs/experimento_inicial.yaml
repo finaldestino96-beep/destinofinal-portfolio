@@ -1,0 +1,33 @@
+# Plantilla ilustrativa; NO ejecutar sin auditar arquitectura, tokenizer y hardware.
+# Los valores son placeholders, no hiperparámetros aprobados.
+experiment:
+  name: "v15-language-pipeline-smoke-test"
+  seed: 42
+  output_dir: "runs/v15-language-smoke"
+model:
+  checkpoint: "PATH_TO_COPY_OF_V15_CHECKPOINT"
+  tokenizer: "PATH_TO_VERSIONED_TOKENIZER"
+  max_sequence_length: "SET_AFTER_AUDIT"
+data:
+  train_manifest: "data/manifests/train.jsonl"
+  validation_manifest: "data/manifests/validation.jsonl"
+  test_manifest: "data/manifests/test_sealed.jsonl"
+  format: "messages_jsonl"
+training:
+  objective: "next_token_prediction"
+  optimizer: "AdamW"
+  learning_rate: "TUNE_AFTER_SMOKE_TEST"
+  batch_size: "FIT_TO_MEMORY"
+  gradient_accumulation_steps: "MEASURE"
+  warmup_steps: "TUNE"
+  weight_decay: "TUNE"
+  max_steps: "SET_FROM_BUDGET"
+  checkpoint_every_steps: "SET"
+evaluation:
+  evaluate_every_steps: "SET"
+  preserve_previous_checkpoint: true
+  run_regression_suite: true
+promotion:
+  require_validation_improvement: true
+  require_no_critical_regression: true
+  require_reproducible_manifest: true
